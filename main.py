@@ -14,8 +14,6 @@ def record(start, end, description):
                'description': description
                }
 
-    #payload = "{\"date\":\"2021-03-02\",\"start_time\":\"2020-02-02 14:05:47\",\"end\":\"2020-02-02 16:21:31\",\"note\":\"string\",\"description\":\"string\"}"
-
     headers = {
         'authorization': "cd9eab8a7b4551e664c2e0a9ed",
         'Content-Type': "application/json"
