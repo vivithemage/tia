@@ -6,15 +6,6 @@ import datetime
 
 import RPi.GPIO as GPIO
 
-# Map to gpio, follows board format (1 - ...)
-# Run 'pinout' on shell in rpi to get mappings.
-pin_out = {
-    'email': 3,     # GPIO2
-    'call': 13,     # GPIO27
-    'meeting': 11,   # GPIO2
-    'admin': 5,     # GPIO3
-    'stop': 7,     # GPIO17
-}
 
 global_state = {
     'running': False,
@@ -27,17 +18,93 @@ tc_endpoints = {
     'entries': 'https://app.timecamp.com/third_party/api/entries'
 }
 
+# Seperate api keys, makes it easy to switch during testing
+api_key = {
+    'rs':  '90c3737f69122ea9ea321928e6', # My work timecamp
+    'rst': '',                           # test timecamp
+    'tm':  '9cea44b6316b521a673556d2a4'  # Tom's timecamp
+}
 
-# TM
-# 'authorization': "9cea44b6316b521a673556d2a4",
-# RS
-# 'authorization': "90c3737f69122ea9ea321928e6",
-api_key = '90c3737f69122ea9ea321928e6'
+
+class Tasks:
+    def pull(self):
+        print("pulling all tasks")
+        api = Timecamp_Api()
+        tasks = api.get_tasks()
+    
+    def populate(self):
+        print("populating tasks")
+
+    def get_id(self, name):
+        print("getting id based on name")
 
 
-# returns current time in timecamp format.
-class Tracking:
-    def _record(start, end, description):
+class Buttons:
+    def setup(self):
+        # Ignore warning for now
+        GPIO.setwarnings(False)
+
+        # Use physical pin numbering
+        GPIO.setmode(GPIO.BOARD)
+        
+        # Map to gpio, follows board format (1 - ...)
+        # Run 'pinout' on shell in rpi to get mappings.
+        pin_out = {
+            'email': 3,    
+            'call': 13,    
+            'meeting': 11,
+            'admin': 5,  
+            'stop': 7,  
+        }
+
+        # Set pins for each button
+        for pin in pin_out:
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        # Setup event for each button on rising pin
+        GPIO.add_event_detect(pin_out['email'], GPIO.RISING, callback=start_email, bouncetime=200)
+        GPIO.add_event_detect(pin_out['call'], GPIO.RISING, callback=start_call, bouncetime=200)
+        GPIO.add_event_detect(pin_out['meeting'], GPIO.RISING, callback=start_meeting, bouncetime=200)
+        GPIO.add_event_detect(pin_out['admin'], GPIO.RISING, callback=start_admin, bouncetime=200)
+        GPIO.add_event_detect(pin_out['stop'], GPIO.RISING, callback=stop_tracking, bouncetime=200)
+
+        # Clean up
+        GPIO.cleanup()
+
+
+# TODO: Initialize led's for notififications
+class Indicators:
+    def setup(self):
+        print("Led setup")
+
+    def running(self):
+        print("Led 2 (red) on indicating task running")
+    
+    def not_running(self):
+        print("Led 2 (red) off indicating no task is active")
+
+    def ready(self):
+        print("Led 1 (green) on indicating ready for input")
+
+    def booting(self):
+        print("Led 1 (green) is off")
+
+
+# All interactions with translations.
+class Translation_Api:
+    def send_file(self, filename):
+        print("sending file to translator")
+
+    def _get_status(self):
+        print("Getting status")
+
+    def get_text(self):
+        print("sending file to translator")
+
+
+# All interactions with timecamp.
+class Timecamp_Api:
+    def record_entry(self, start, end, description):
         today = date.today()
 
         payload = {'date': today.strftime("%Y-%m-%d"),
@@ -48,7 +115,7 @@ class Tracking:
                    }
 
         headers = {
-            'authorization': api_key,
+            'authorization': api_key['rst'],
             'Content-Type': "application/json"
         }
 
@@ -60,6 +127,23 @@ class Tracking:
         print(response.text)
 
 
+    def start_timer(self):
+        print("starting timer")
+
+
+    def stop_timer(self):
+        print("stop timer")
+
+    def get_tasks(self):
+        print("getting tasks")
+
+
+class Tracking:
+
+    def _task_running(self):
+        if global_state['running'] is True:
+
+    
     def _get_current_time(self):
         today = datetime.datetime.now()
         time_string = today.strftime("%H:%M:%S")
@@ -71,29 +155,36 @@ class Tracking:
     def stop(self):
         print("Stop request (either button or start)")
 
-        if global_state['running'] is True:
+        if self._task_running():
             print("stopping " + task_name)
             global_state['end_time'] = get_current_time()
             global_state['running'] = False
+            
             print("> stopping task and recording")
-            self._record(start=global_state['start_time'], end=global_state['end_time'], description=global_state['current_task'])
+            api = Timecamp_Api()
+            api.record_entry(start=global_state['start_time'], 
+                              end=global_state['end_time'], 
+                              description=global_state['current_task'])
+            
             print(global_state)
 
 
     def start(self, task_name):
         print(task_name + "button was pushed.")
        
-        # Stop task before starting a new one (just a precaution)
+        # Stop task before starting a new one 
+        # This is just a precaution in case one is already running.
         self.stop()
         
-        if global_state['running'] is not True:
+        if self._task_running() is not True:
             print("starting to track " + task_name)
             global_state['running'] = True
             global_state['current_task'] = task_name 
             global_state['start_time'] = self._get_current_time()
 
 
-# Start Triggers
+# Start Triggers TODO - change this to a single function by padding argument 
+# in event trigger
 def start_email(channel):
     t = Tracking()
     t.start('email') 
@@ -118,30 +209,23 @@ def stop_tracking(channel):
 
 def tia():
     print("starting tia...")
-    # Ignore warning for now
-    GPIO.setwarnings(False)
 
-    # Use physical pin numbering
-    GPIO.setmode(GPIO.BOARD)
+    print("Initializing buttons...")
+    buttons = Buttons()
+    buttons.setup()
 
-    # Set pin 10 to be an input pin and set initial value to be pulled low (off)
-    GPIO.setup(pin_out['email'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(pin_out['call'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(pin_out['meeting'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(pin_out['admin'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(pin_out['stop'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    print("Initializing notification LED's...")
+    led = Indicators()
+    led.setup()
 
-    # Setup event for each button on rising pin
-    GPIO.add_event_detect(pin_out['email'], GPIO.RISING, callback=start_email, bouncetime=200)
-    GPIO.add_event_detect(pin_out['call'], GPIO.RISING, callback=start_call, bouncetime=200)
-    GPIO.add_event_detect(pin_out['meeting'], GPIO.RISING, callback=start_meeting, bouncetime=200)
-    GPIO.add_event_detect(pin_out['admin'], GPIO.RISING, callback=start_admin, bouncetime=200)
-    GPIO.add_event_detect(pin_out['stop'], GPIO.RISING, callback=stop_tracking, bouncetime=200)
+    print("Populating tasks...")
+    tasks = Tasks()
+    tasks.populate()
 
+    led.ready()
+    print("Ready!")
     message = input("Press enter to quit\n\n")  # Run until someone presses enter
 
-    # Clean up
-    GPIO.cleanup()
 
 
 # Press the green button in the gutter to run the script.
