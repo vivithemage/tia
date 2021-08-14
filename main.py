@@ -23,94 +23,97 @@ global_state = {
     'end_time': None
 }
 
+tc_endpoints = {
+    'entries': 'https://app.timecamp.com/third_party/api/entries'
+}
+
+
+# TM
+# 'authorization': "9cea44b6316b521a673556d2a4",
+# RS
+# 'authorization': "90c3737f69122ea9ea321928e6",
+api_key = '90c3737f69122ea9ea321928e6'
+
 
 # returns current time in timecamp format.
-def get_current_time():
-    today = datetime.datetime.now()
-    time_string = today.strftime("%H:%M:%S")
-    print(time_string)
+class Tracking:
+    def _record(start, end, description):
+        today = date.today()
 
-    return time_string
+        payload = {'date': today.strftime("%Y-%m-%d"),
+                   'start': start,
+                   'end': end,
+                   'note': description,
+                   'description': description
+                   }
+
+        headers = {
+            'authorization': api_key,
+            'Content-Type': "application/json"
+        }
+
+        response = requests.request("POST", tc_endpoints['entries'], 
+                                    data=json.dumps(payload), 
+                                    headers=headers)
+
+        print("> timecamp response")
+        print(response.text)
+
+
+    def _get_current_time(self):
+        today = datetime.datetime.now()
+        time_string = today.strftime("%H:%M:%S")
+        print(time_string)
+
+        return time_string
+
+
+    def stop(self):
+        print("Stop request (either button or start)")
+
+        if global_state['running'] is True:
+            print("stopping " + task_name)
+            global_state['end_time'] = get_current_time()
+            global_state['running'] = False
+            print("> stopping task and recording")
+            self._record(start=global_state['start_time'], end=global_state['end_time'], description=global_state['current_task'])
+            print(global_state)
+
+
+    def start(self, task_name):
+        print(task_name + "button was pushed.")
+       
+        # Stop task before starting a new one (just a precaution)
+        self.stop()
+        
+        if global_state['running'] is not True:
+            print("starting to track " + task_name)
+            global_state['running'] = True
+            global_state['current_task'] = task_name 
+            global_state['start_time'] = self._get_current_time()
 
 
 # Start Triggers
 def start_email(channel):
-    print("Email button was pushed.")
-
-    if global_state['running'] is not True:
-        print("> Tracking email task!")
-        global_state['running'] = True
-        global_state['current_task'] = 'email'
-        global_state['start_time'] = get_current_time()
-
+    t = Tracking()
+    t.start('email') 
 
 def start_admin(channel):
-    print("Admin button was pushed.")
-
-    if global_state['running'] is not True:
-        print("> Tracking admin task!")
-        global_state['running'] = True
-        global_state['current_task'] = 'admin'
-        global_state['start_time'] = get_current_time()
-
+    t = Tracking()
+    t.start('admin') 
 
 def start_call(channel):
-    print("Call button was pushed.")
-
-    if global_state['running'] is not True:
-        print("> Tracking call task!")
-        global_state['running'] = True
-        global_state['current_task'] = 'call'
-        global_state['start_time'] = get_current_time()
-
+    t = Tracking()
+    t.start('call') 
 
 def start_meeting(channel):
-    print("Meeting button was pushed.")
-
-    if global_state['running'] is not True:
-        print("> Tracking meeting task!")
-        global_state['running'] = True
-        global_state['current_task'] = 'meeting'
-        global_state['start_time'] = get_current_time()
-
+    t = Tracking()
+    t.start('meeting') 
 
 # Stop tracking and save to timecamp
 def stop_tracking(channel):
-    # Only track if it's currently running. Otherwise ignore it.
-    print("Stop button pressed")
-
-    if global_state['running'] is True:
-        global_state['end_time'] = get_current_time()
-        global_state['running'] = False
-        print("> stopping task and recording")
-        record(start=global_state['start_time'], end=global_state['end_time'], description=global_state['current_task'])
-        print(global_state)
-
-
-def record(start, end, description):
-    today = date.today()
-    url = "https://app.timecamp.com/third_party/api/entries"
-
-    payload = {'date': today.strftime("%Y-%m-%d"),
-               'start': start,
-               'end': end,
-               'note': description,
-               'description': description
-               }
-
-    # TM
-    # 'authorization': "9cea44b6316b521a673556d2a4",
-    # RS
-    # 'authorization': "90c3737f69122ea9ea321928e6",
-    headers = {
-    	'authorization': "90c3737f69122ea9ea321928e6",
-        'Content-Type': "application/json"
-    }
-
-    response = requests.request("POST", url, data=json.dumps(payload), headers=headers)
-
-    print("> timecamp response")
-    print(response.text)
+    t = Tracking()
+    t.stop()
 
 
 def tia():
@@ -145,4 +148,3 @@ def tia():
 if __name__ == '__main__':
     tia()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
