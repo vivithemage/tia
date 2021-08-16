@@ -15,7 +15,8 @@ global_state = {
 }
 
 tc_endpoints = {
-    'entries': 'https://app.timecamp.com/third_party/api/entries'
+    'entries': 'https://app.timecamp.com/third_party/api/entries',
+    'timer': ''
 }
 
 # Seperate api keys, makes it easy to switch during testing
@@ -189,17 +190,21 @@ def start_email(channel):
     t = Tracking()
     t.start('email') 
 
+
 def start_admin(channel):
     t = Tracking()
     t.start('admin') 
+
 
 def start_call(channel):
     t = Tracking()
     t.start('call') 
 
+
 def start_meeting(channel):
     t = Tracking()
     t.start('meeting') 
+
 
 # Stop tracking and save to timecamp
 def stop_tracking(channel):
@@ -210,22 +215,22 @@ def stop_tracking(channel):
 def tia():
     print("starting tia...")
 
-    print("Initializing buttons...")
     buttons = Buttons()
+    led = Indicators()
+    tasks = Tasks()
+
+    print("Initializing buttons...")
     buttons.setup()
 
     print("Initializing notification LED's...")
-    led = Indicators()
     led.setup()
 
     print("Populating tasks...")
-    tasks = Tasks()
     tasks.populate()
 
-    led.ready()
     print("Ready!")
+    led.ready()
     message = input("Press enter to quit\n\n")  # Run until someone presses enter
-
 
 
 # Press the green button in the gutter to run the script.
