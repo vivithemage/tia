@@ -3,6 +3,8 @@ python3 -m sounddevice
 
 {'index': 1, 'structVersion': 2, 'name': 'USB Audio Device: - (hw:1,0)', 'hostApi': 0, 'maxInputChannels': 1, 'maxOutputChannels': 2, 'defaultLowInputLatency': 0.008684807256235827, 'defaultLowOutputLatency': 0.008707482993197279, 'defaultHighInputLatency': 0.034829931972789115, 'defaultHighOutputLatency': 0.034829931972789115, 'defaultSampleRate': 44100.0}
 
+
+https://python-sounddevice.readthedocs.io/en/0.3.14/examples.html#recording-with-arbitrary-duration
 """
 
 
@@ -34,6 +36,7 @@ print('Recording...')
 frames = []
 
 # Store data in chunks for 8 seconds
+
 for i in range(0, int(smpl_rt / chunk * seconds)):
     data = stream.read(chunk)
     frames.append(data)
