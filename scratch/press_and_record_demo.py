@@ -2,6 +2,7 @@ import RPi.GPIO as gpio
 import threading
 import pyaudio
 import wave
+import random
 
 # Ignore warning for now
 gpio.setwarnings(False)
@@ -18,13 +19,13 @@ class VerbalLog:
         self.sample_format = pyaudio.paInt16
         self.channels = 1
         self.fs = 44100
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(format=self.sample_format, channels=self.channels, rate=self.fs,
+                                  frames_per_buffer=self.chunk, input=True)
 
         self.frames = []
 
     def start_recording(self):
-        self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(format=self.sample_format, channels=self.channels, rate=self.fs,
-                                  frames_per_buffer=self.chunk, input=True)
         self.is_recording = True
 
         print('Recording')
@@ -34,21 +35,24 @@ class VerbalLog:
     def stop_recording(self):
         try:
             self.is_recording = False
-            self.filename = "recording.wav"
+            self.filename = "recording" + str(random.randint(1, 100)) + ".wav"
             print('recording complete')
-            wf = wave.open(self.filename, 'wb')
-            wf.setnchannels(self.channels)
-            wf.setsampwidth(self.p.get_sample_size(self.sample_format))
-            wf.setframerate(self.fs)
-            wf.writeframes(b''.join(self.frames))
-            wf.close()
+            # wf = wave.open(self.filename, 'wb')
+            # wf.setnchannels(self.channels)
+            # wf.setsampwidth(self.p.get_sample_size(self.sample_format))
+            # wf.setframerate(self.fs)
+            # wf.writeframes(b''.join(self.frames))
+            # wf.close()
+            #
+            self.frames = []
+            # self.stream.close()
 
         except():
             print('an error occurred')
 
     def record(self):
         while self.is_recording:
-            data = self.stream.read(self.chunk)
+            data = self.stream.read(self.chunk, exception_on_overflow=False)
             self.frames.append(data)
 
         print("stopped thread")
