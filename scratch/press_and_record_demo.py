@@ -3,6 +3,7 @@ import threading
 import pyaudio
 import wave
 import random
+import uuid
 
 # Ignore warning for now
 gpio.setwarnings(False)
@@ -34,7 +35,7 @@ class VerbalLog:
 
     def stop_recording(self):
         self.is_recording = False
-        self.filename = "recording" + str(random.randint(1, 100)) + ".wav"
+        self.filename = "recording-" + str(uuid.uuid4()) + ".wav"
         print('recording complete')
 
         try:
