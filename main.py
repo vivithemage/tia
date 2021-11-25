@@ -1,176 +1,100 @@
-import datetime
-import time
+import RPi.GPIO as gpio
+import threading
+import pyaudio
+import wave
+import random
+import uuid
 
-from log import tlog
-from timecamp import TimecampApi
+from speech import TextToSpeech
 
-# import thread
-
-import RPi.GPIO as GPIO
-
-GPIO.setmode(GPIO.BOARD)
-
-global_state = {
-    'running': False,
-    'current_task': 'unknown',
-    'start_time': None,
-    'end_time': None
-}
+# Ignore warning for now
+gpio.setwarnings(False)
+gpio.setmode(gpio.BOARD)
 
 
-class Tasks:
-    def pull(self):
-        tlog("pulling all tasks")
-        api = TimecampApi()
-        tasks = api.get_tasks()
-
-    def populate(self):
-        tlog("populating tasks")
-
-    def get_id(self, name):
-        tlog("getting id based on name")
-
-
-class Buttons:
-    def setup(self):
-        tlog("running Button Setup...")
-        # Map to gpio, follows board format (1 - ...)
-        # Run 'pinout' on shell in rpi to get mappings.
-        pin_out = {
-            'email': 3,
-            'call': 13,
-            'meeting': 11,
-            'admin': 5,
-            'stop': 7,
-        }
-
-        # Set pins for each button
-        for pin in pin_out:
-            GPIO.setup(pin_out[pin], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-        # Setup event for each button on rising pin
-        GPIO.add_event_detect(pin_out['email'], GPIO.RISING, callback=start_email, bouncetime=3000)
-        GPIO.add_event_detect(pin_out['call'], GPIO.RISING, callback=start_call, bouncetime=3000)
-        GPIO.add_event_detect(pin_out['meeting'], GPIO.RISING, callback=start_meeting, bouncetime=3000)
-        GPIO.add_event_detect(pin_out['admin'], GPIO.RISING, callback=start_admin, bouncetime=3000)
-        GPIO.add_event_detect(pin_out['stop'], GPIO.RISING, callback=stop_tracking, bouncetime=3000)
-
-
-# TODO: Initialize led's for notifications
-class Indicators:
-    def setup(self):
-        GPIO.setup(23, GPIO.OUT)
-        GPIO.output(23, GPIO.LOW)
-
-    def running(self):
-        tlog("Led 2 (red) on indicating task running")
-        GPIO.setup(23, GPIO.OUT)
-        GPIO.output(23, GPIO.HIGH)
-
-    def not_running(self):
-        tlog("Led 2 (red) off indicating no task is active")
-        GPIO.setup(23, GPIO.OUT)
-        GPIO.output(23, GPIO.LOW)
-
-    def ready(self):
-        tlog("Led 1 (green) on indicating ready for input")
-
-    def booting(self):
-        tlog("Led 1 (green) is off")
-
-
-class Tracking:
+class VerbalLog:
     def __init__(self):
-        self.timecamp = TimecampApi()
-        self.indicators = Indicators()
+        self.is_recording = False
+        self.filename = None
+        self.p = None
+        self.stream = None
+        self.chunk = 8192
+        self.sample_format = pyaudio.paInt16
+        self.channels = 1
+        self.fs = 44100
+        self.p = pyaudio.PyAudio()
+        self.stream = self.p.open(format=self.sample_format, channels=self.channels, rate=self.fs,
+                                  frames_per_buffer=self.chunk, input=True)
 
-    def _task_running(self):
-        if global_state['running'] is True:
-            tlog("a task is running")
-            return True
+        self.frames = []
 
-    def _get_current_time(self):
-        today = datetime.datetime.now()
-        time_string = today.strftime("%H:%M:%S")
-        tlog(time_string)
+    def start_recording(self):
+        self.is_recording = True
 
-        return time_string
+        print('Recording')
+        t = threading.Thread(target=self.record)
+        t.start()
 
-    def stop(self):
-        tlog("Stop request (either button or start)")
+    def stop_recording(self):
+        self.is_recording = False
+        self.filename = "recordings/recording-" + str(uuid.uuid4()) + ".wav"
+        print('recording complete')
+        print('writing to: ' + self.filename)
 
-        self.indicators.not_running()
-        self.timecamp.stop_timer()
+        try:
+            wf = wave.open(self.filename, 'wb')
+            wf.setnchannels(self.channels)
+            wf.setsampwidth(self.p.get_sample_size(self.sample_format))
+            wf.setframerate(self.fs)
+            wf.writeframes(b''.join(self.frames))
+            wf.close()
 
-    def start(self, task_name):
-        tlog(task_name + " button was pushed.")
+            self.frames = []
 
-        indicators = Indicators()
-        indicators.running()
+            return self.filename
 
-        tlog("starting to track " + task_name)
-        global_state['running'] = True
-        global_state['current_task'] = task_name
-        global_state['start_time'] = self._get_current_time()
+        except():
+            print('an error occurred')
 
-        tlog("startinggg")
-        self.timecamp.start_timer()
+    def record(self):
+        while self.is_recording:
+            data = self.stream.read(self.chunk, exception_on_overflow=False)
+            self.frames.append(data)
 
-
-# Start Triggers TODO - change this to a single function by padding argument 
-# in event trigger
-def start_email(channel):
-    t = Tracking()
-    t.start('email')
-
-
-def start_admin(channel):
-    t = Tracking()
-    t.start('admin')
-
-
-def start_call(channel):
-    tlog("call running base")
-    # time.sleep(2)
-    t = Tracking()
-    t.start('call')
+        print("stopped thread")
 
 
-def start_meeting(channel):
-    t = Tracking()
-    t.start('meeting')
+class Tia:
+    def __init__(self):
+        self.recorder = VerbalLog()
+        self.speech = TextToSpeech()
 
+    def rising(self, channel):
+        print("released")
+        gpio.remove_event_detect(3)
+        gpio.add_event_detect(3, gpio.FALLING, callback=self.falling, bouncetime=100)
+        audio_filename = self.recorder.stop_recording()
+        converted_text = self.speech.convert(audio_filename)
 
-# Stop tracking and save to timecamp
-def stop_tracking(channel):
-    t = Tracking()
-    t.stop()
+        print(converted_text)
 
+    def falling(self, channel):
+        print("pressed")
+        gpio.remove_event_detect(3)
+        gpio.add_event_detect(3, gpio.RISING, callback=self.rising, bouncetime=100)
+        self.recorder.start_recording()
 
-def tia():
-    tlog("starting tia...")
+    def run(self):
+        print("starting tia...")
+        gpio.setup(3, gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.add_event_detect(3, gpio.FALLING, callback=self.falling, bouncetime=100)
 
-    buttons = Buttons()
-    indicators = Indicators()
-    # tasks = Tasks()
+        message = input("Press enter to quit\n\n")  # Run until someone presses enter
 
-    tlog("Initializing buttons...")
-    buttons.setup()
-
-    tlog("Initializing notification LED's...")
-    indicators.setup()
-
-    # tlog("Populating tasks...")
-    # # tasks.populate()
-    #
-    # tlog("Ready!")
-    # led.ready()
-
-    message = input("Press enter to quit\n\n")  # Run until someone presses enter
-
-    GPIO.cleanup()
+        gpio.cleanup()
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    tia()
+    tia = Tia()
+    tia.run()
