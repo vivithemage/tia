@@ -10,6 +10,18 @@ from tracking import Tracking
 gpio.setwarnings(False)
 gpio.setmode(gpio.BOARD)
 
+# Map to gpio, follows board format (1 - ...)
+# Run 'pinout' on shell in rpi to get mappings.
+pin_out = {
+    'email': 3,     # GPIO2
+    'call': 13,     # GPIO27
+    'meeting': 11,   # GPIO2
+    'admin': 5,     # GPIO3
+    'stop': 7,     # GPIO17
+}
+
+bounce_ms = 100
+
 
 class Tia:
     def __init__(self):
@@ -23,7 +35,7 @@ class Tia:
 
         # Reset button so that it can be pressed again.
         gpio.remove_event_detect(button_id)
-        gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id), bouncetime=100)
+        gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id), bouncetime=bounce_ms)
 
         # Convert audio to text
         audio_filename = self.recorder.stop_recording()
@@ -37,12 +49,18 @@ class Tia:
     def falling(self, button_id):
         tlog("pressed - button id: " + str(button_id))
         gpio.remove_event_detect(button_id)
-        gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id), bouncetime=100)
+        gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id), bouncetime=bounce_ms)
         self.recorder.start_recording()
 
+    def stop(self):
+        self.tracking.stop()
+
     def run(self):
-        gpio.setup(3, gpio.IN, pull_up_down=gpio.PUD_UP)
-        gpio.add_event_detect(3, gpio.FALLING, callback=lambda x: self.falling(3), bouncetime=100)
+        gpio.setup(pin_out['email'], gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup(pin_out['stop'], gpio.IN, pull_up_down=gpio.PUD_UP)
+
+        gpio.add_event_detect(pin_out['email'], gpio.FALLING, callback=lambda x: self.falling(pin_out['email']), bouncetime=bounce_ms)
+        gpio.add_event_detect(pin_out['stop'], gpio.RISING, callback=lambda x: self.stop(), bouncetime=bounce_ms)
 
         self.recorder.clear_recordings()
         message = input("<< Tia is ready. Press enter to quit >>\n\n")  # Run until someone presses enter
