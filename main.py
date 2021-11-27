@@ -18,6 +18,7 @@ pin_out = {
     'meeting': 11,   # GPIO2
     'admin': 5,     # GPIO3
     'stop': 7,     # GPIO17
+    'tracking_led': 23
 }
 
 timecamp_task_id = {
@@ -68,6 +69,8 @@ class Tia:
         gpio.setup(pin_out['meeting'], gpio.IN, pull_up_down=gpio.PUD_UP)
         gpio.setup(pin_out['admin'], gpio.IN, pull_up_down=gpio.PUD_UP)
         gpio.setup(pin_out['stop'], gpio.IN, pull_up_down=gpio.PUD_UP)
+
+        gpio.setup(pin_out['tracking_led'], gpio.OUT)
 
         gpio.add_event_detect(pin_out['email'], gpio.FALLING,
                               callback=lambda x: self.falling(pin_out['email'], timecamp_task_id['email']),
