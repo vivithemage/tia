@@ -20,6 +20,13 @@ pin_out = {
     'stop': 7,     # GPIO17
 }
 
+timecamp_task_id = {
+    'email': 90658387,
+    'call': 96440757,
+    'meeting': 96440756,
+    'admin': 96440755,
+}
+
 bounce_ms = 100
 
 
@@ -29,27 +36,27 @@ class Tia:
         self.speech = TextToSpeech()
         self.tracking = Tracking()
 
-    def rising(self, button_id):
+    def rising(self, button_id, task_id):
 
         tlog("released - button id: " + str(button_id))
 
         # Reset button so that it can be pressed again.
         gpio.remove_event_detect(button_id)
-        gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id), bouncetime=bounce_ms)
+        gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id, task_id), bouncetime=bounce_ms)
 
         # Convert audio to text
         audio_filename = self.recorder.stop_recording()
         converted_text = self.speech.convert(audio_filename)
 
         tlog('converted text: ' + converted_text)
-        # Start timer for job with speech conversion in description
-        task_category_id = 0
-        self.tracking.start(converted_text, task_category_id)
 
-    def falling(self, button_id):
+        # Start timer for job with speech conversion in description
+        self.tracking.start(converted_text, task_id)
+
+    def falling(self, button_id, task_id):
         tlog("pressed - button id: " + str(button_id))
         gpio.remove_event_detect(button_id)
-        gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id), bouncetime=bounce_ms)
+        gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id, task_id), bouncetime=bounce_ms)
         self.recorder.start_recording()
 
     def stop(self):
@@ -57,9 +64,24 @@ class Tia:
 
     def run(self):
         gpio.setup(pin_out['email'], gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup(pin_out['call'], gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup(pin_out['meeting'], gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup(pin_out['admin'], gpio.IN, pull_up_down=gpio.PUD_UP)
         gpio.setup(pin_out['stop'], gpio.IN, pull_up_down=gpio.PUD_UP)
 
-        gpio.add_event_detect(pin_out['email'], gpio.FALLING, callback=lambda x: self.falling(pin_out['email']), bouncetime=bounce_ms)
+        gpio.add_event_detect(pin_out['email'], gpio.FALLING,
+                              callback=lambda x: self.falling(pin_out['email'], timecamp_task_id['email']),
+                              bouncetime=bounce_ms)
+
+        gpio.add_event_detect(pin_out['call'], gpio.FALLING, callback=lambda x: self.falling(pin_out['call'], timecamp_task_id['call']),
+                              bouncetime=bounce_ms)
+
+        gpio.add_event_detect(pin_out['meeting'], gpio.FALLING, callback=lambda x: self.falling(pin_out['meeting'], timecamp_task_id['meeting']),
+                              bouncetime=bounce_ms)
+
+        gpio.add_event_detect(pin_out['admin'], gpio.FALLING, callback=lambda x: self.falling(pin_out['admin'], timecamp_task_id['admin']),
+                              bouncetime=bounce_ms)
+
         gpio.add_event_detect(pin_out['stop'], gpio.RISING, callback=lambda x: self.stop(), bouncetime=bounce_ms)
 
         self.recorder.clear_recordings()

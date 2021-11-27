@@ -10,8 +10,8 @@ class Tracking:
         tlog("Stop request (either button or start)")
         self.timecamp.stop_timer()
 
-    def start(self, description, task_category_id):
-        tlog("starting to track job id: " + str(task_category_id))
-        entry_id = self.timecamp.start_timer(task_category_id)
+    def start(self, description, task_id):
+        tlog("starting to track job id: " + str(task_id))
+        entry_id = self.timecamp.start_timer(task_id)
         self.timecamp.set_description(entry_id, description)
         tlog('Entry id: ' + str(entry_id))
