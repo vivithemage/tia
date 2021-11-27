@@ -3,8 +3,6 @@ import requests
 import xmltodict
 
 from log import tlog
-from datetime import date
-
 
 tc_endpoints = {
     'entries': 'https://app.timecamp.com/third_party/api/entries',
@@ -27,24 +25,6 @@ class TimecampApi:
             'Content-Type': "application/json"
         }
 
-    def record_entry(self, start, end, description):
-        today = date.today()
-
-        payload = {'date': today.strftime("%Y-%m-%d"),
-                   'start': start,
-                   'end': end,
-                   'note': description,
-                   'description': description
-                   }
-
-        response = requests.request("POST", tc_endpoints['entries'],
-                                    data=json.dumps(payload),
-                                    headers=self.headers)
-
-        #data_dict = xmltodict.parse(response.text)
-        # tlog("timecamp response")
-        #tlog(data_dict)
-
     def start_timer(self, task_id):
         tlog("Starting timer")
         payload = {'action': 'start',
@@ -61,7 +41,7 @@ class TimecampApi:
         return data_dict.get('xml')['entry_id']
 
     def set_description(self, entry_id, description):
-        tlog("Starting timer")
+        tlog("Writing description to timer")
         payload = {'id': entry_id, 'description': description}
 
         # TODO: issue lies with this triggering the whole process again.
@@ -70,10 +50,14 @@ class TimecampApi:
                                     headers=self.headers)
 
         data_dict = xmltodict.parse(response.text)
-        print(data_dict)
+        # print(data_dict)
 
     def stop_timer(self):
-        tlog("stop timer")
+        tlog("Stopping timer")
+        payload = {'action': "stop"}
 
-    def get_tasks(self):
-        tlog("getting tasks")
+        response = requests.request("POST", tc_endpoints['timer'],
+                                    data=json.dumps(payload),
+                                    headers=self.headers)
+
+        data_dict = xmltodict.parse(response.text)

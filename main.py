@@ -44,7 +44,8 @@ class Tia:
         gpio.setup(3, gpio.IN, pull_up_down=gpio.PUD_UP)
         gpio.add_event_detect(3, gpio.FALLING, callback=lambda x: self.falling(3), bouncetime=100)
 
-        message = input("<< Tia is running. Press enter to quit >>\n\n")  # Run until someone presses enter
+        self.recorder.clear_recordings()
+        message = input("<< Tia is ready. Press enter to quit >>\n\n")  # Run until someone presses enter
 
         gpio.cleanup()
 

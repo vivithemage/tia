@@ -2,6 +2,7 @@ import threading
 import pyaudio
 import wave
 import uuid
+import os
 
 from log import tlog
 
@@ -56,3 +57,10 @@ class VerbalLog:
             self.frames.append(data)
 
         tlog("stopped VerbalLog thread")
+
+    def clear_recordings(self):
+        directory = 'recordings'
+
+        tlog("Clearing old recordings")
+        for f in os.listdir(directory):
+            os.remove(os.path.join(directory, f))
