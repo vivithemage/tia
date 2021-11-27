@@ -9,11 +9,16 @@ class TextToSpeech:
 
     def convert(self, filename):
         tlog("converting")
-        with sr.AudioFile(filename) as source:
-            # listen for the data (load audio to memory)
-            audio_data = self.recognizer.record(source)
+        try:
+            with sr.AudioFile(filename) as source:
+                # listen for the data (load audio to memory)
+                audio_data = self.recognizer.record(source)
 
-            # recognize (convert from speech to text)
-            text = self.recognizer.recognize_google(audio_data)
+                # recognize (convert from speech to text)
+                text = self.recognizer.recognize_google(audio_data)
 
-            return text
+                return text
+        # Sometimes occurs, I think it's if the speech is bad quality and there is difficulty converting.
+        # see: https://stackoverflow.com/questions/56359106/speech-recognition-unknownvalueerror
+        except self.recognizer.speech_recognition.UnknownValueError:
+            return 'error running voice to text'

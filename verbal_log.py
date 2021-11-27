@@ -55,4 +55,4 @@ class VerbalLog:
             data = self.stream.read(self.chunk, exception_on_overflow=False)
             self.frames.append(data)
 
-        tlog("stopped thread")
+        tlog("stopped VerbalLog thread")
