@@ -20,5 +20,5 @@ class TextToSpeech:
                 return text
         # Sometimes occurs, I think it's if the speech is bad quality and there is difficulty converting.
         # see: https://stackoverflow.com/questions/56359106/speech-recognition-unknownvalueerror
-        except self.recognizer.speech_recognition.UnknownValueError:
+        except:
             return 'error running voice to text'
