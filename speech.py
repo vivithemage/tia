@@ -1,5 +1,6 @@
 import speech_recognition as sr
 from log import tlog
+import time
 
 
 class TextToSpeech:
@@ -9,6 +10,7 @@ class TextToSpeech:
 
     def convert(self, filename):
         tlog("converting")
+        time.sleep(1)
         try:
             with sr.AudioFile(filename) as source:
                 # listen for the data (load audio to memory)

@@ -60,7 +60,12 @@ class InputHandler:
         # Idle is the state where this loop does nothing so after each action, set it to idle
         while True:
             if global_state.running.get() == 'pressed':
-                tlog("pressed")
+                tlog("pressed task button")
+
+                # Stop existing task if active
+                if self.tracking.is_active():
+                    self.tracking.stop()
+
                 with self.recorder.open(self.audio_filename, 'wb') as self.recording_file:
 
                     tlog("start recording")
@@ -80,33 +85,17 @@ class InputHandler:
                     tlog('converted text: ' + converted_text)
 
                     # Start timer for job with speech conversion in description
-                    # self.tracking.start(converted_text, task_id)
+                    self.tracking.start(converted_text, global_state.task.get())
 
-            elif global_state.running.get() == 'released':
-                tlog("released and stopping recording")
-                self.recording_file = self.recording_file.stop_recording()
-                global_state.running.set('idle')
             elif global_state.running.get() == 'stop':
                 tlog("stopping")
+                self.tracking.stop()
                 global_state.running.set('idle')
 
 
 class Tia:
     def __init__(self):
         pass
-
-    def rising(self, button_id, task_id):
-        tlog("released - button id: " + str(button_id))
-
-        # Set state for monitor to pick up on
-        global_state.running.set('released')
-        global_state.task.set(task_id)
-        global_state.button.set(button_id)
-
-        # Reset button so that it can be used again.
-        gpio.remove_event_detect(button_id)
-        gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id, task_id),
-                              bouncetime=bounce_ms)
 
     def falling(self, button_id, task_id):
         tlog("pressed - button id: " + str(button_id))
@@ -115,15 +104,10 @@ class Tia:
         global_state.running.set('pressed')
         global_state.task.set(task_id)
         global_state.button.set(button_id)
-        gpio.remove_event_detect(button_id)
-
-        # Reset button so that it can be used again.
-        gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id, task_id),
-                              bouncetime=bounce_ms)
 
     def stop(self):
         tlog("stopping")
-        # self.tracking.stop()
+        global_state.running.set('stop')
 
     def run(self):
         # TODO put this in a loop...
@@ -154,7 +138,9 @@ class Tia:
         gpio.add_event_detect(pin_out['stop'], gpio.RISING, callback=lambda x: self.stop(), bouncetime=bounce_ms)
 
         # start monitoring and acting on button state changes
-        tlog("Tia is starting up.")  # Run until someone presses enter
+        tlog("Tia is starting up.")
+        # If execution lasts longer than the button press bounce value, it seems to crash.
+        # This is the reason for a seperate thread (InputHandler) being used to monitor and act on button/state changes.
         handler = InputHandler()
         handler.init()
 

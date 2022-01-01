@@ -23,7 +23,7 @@ class Recorder(object):
     Records in mono by default.
     '''
 
-    def __init__(self, channels=1, rate=44100, frames_per_buffer=1024):
+    def __init__(self, channels=1, rate=44100, frames_per_buffer=2056):
         self.channels = channels
         self.rate = rate
         self.frames_per_buffer = frames_per_buffer
@@ -31,6 +31,7 @@ class Recorder(object):
     def open(self, fname, mode='wb'):
         return RecordingFile(fname, mode, self.channels, self.rate,
                             self.frames_per_buffer)
+
 
 class RecordingFile(object):
     def __init__(self, fname, mode, channels,

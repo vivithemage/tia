@@ -12,6 +12,7 @@ class SharedState:
         self._note = 'unknown'
 
     def set(self, value):
+        self.set_note()
         with self._value_lock:
             tlog("setting state (" + self._note + ") to: " + str(value))
             self._value = value
