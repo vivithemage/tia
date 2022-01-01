@@ -51,7 +51,8 @@ class InputHandler:
         self.speech = TextToSpeech()
         self.tracking = Tracking()
         self.audio_filename = "recordings/recording-" + str(uuid.uuid4()) + ".wav"
-        self.recfile2 = None
+        self.recording_file = None
+        self.record_time_sec = 5.0
 
     def init(self):
         tlog('Starting InputHandler thread.')
@@ -60,16 +61,30 @@ class InputHandler:
         while True:
             if global_state.running.get() == 'pressed':
                 tlog("pressed")
-                with self.recorder.open(self.audio_filename, 'wb') as self.recfile2:
+                with self.recorder.open(self.audio_filename, 'wb') as self.recording_file:
+
                     tlog("start recording")
-                    self.recfile2 = self.recfile2.start_recording()
-                    # time.sleep(5.0)
-                    # self.recfile2.stop_recording()
                     global_state.running.set('recording')
+                    self.recording_file = self.recording_file.start_recording()
+                    '''
+                    TODO - There's a timer placed here because using the stop_recording method outside this method
+                    does not work for some reason. For the sake of getting this working, it uses a preset time which
+                    blocks the system. Also the buttons I have seem really bad, so this is probably a better 
+                    way for now.
+                    '''
+                    time.sleep(self.record_time_sec)
+                    self.recording_file.stop_recording()
+
+                    # Convert audio to text
+                    converted_text = self.speech.convert(self.audio_filename)
+                    tlog('converted text: ' + converted_text)
+
+                    # Start timer for job with speech conversion in description
+                    # self.tracking.start(converted_text, task_id)
 
             elif global_state.running.get() == 'released':
                 tlog("released and stopping recording")
-                self.recfile2 = self.recfile2.stop_recording()
+                self.recording_file = self.recording_file.stop_recording()
                 global_state.running.set('idle')
             elif global_state.running.get() == 'stop':
                 tlog("stopping")
@@ -93,16 +108,6 @@ class Tia:
         gpio.add_event_detect(button_id, gpio.FALLING, callback=lambda x: self.falling(button_id, task_id),
                               bouncetime=bounce_ms)
 
-        # Convert audio to text
-        # self.recfile2.stop_recording()
-
-        # converted_text = self.speech.convert(self.audio_filename)
-        # converted_text = 'testxxxx'
-        # tlog('converted text: ' + converted_text)
-        #
-        # # Start timer for job with speech conversion in description
-        # self.tracking.start(converted_text, task_id)
-
     def falling(self, button_id, task_id):
         tlog("pressed - button id: " + str(button_id))
 
@@ -115,9 +120,6 @@ class Tia:
         # Reset button so that it can be used again.
         gpio.add_event_detect(button_id, gpio.RISING, callback=lambda x: self.rising(button_id, task_id),
                               bouncetime=bounce_ms)
-
-        # self.recorder.start_recording()
-        # self.recfile2.start_recording()
 
     def stop(self):
         tlog("stopping")
@@ -152,7 +154,6 @@ class Tia:
         gpio.add_event_detect(pin_out['stop'], gpio.RISING, callback=lambda x: self.stop(), bouncetime=bounce_ms)
 
         # start monitoring and acting on button state changes
-        # self.recorder.clear_recordings()
         tlog("Tia is starting up.")  # Run until someone presses enter
         handler = InputHandler()
         handler.init()
