@@ -3,10 +3,10 @@ from log import tlog
 
 
 def tracking_led_on():
-    tlog("LED on")
+    tlog("Tracking LED on")
     GPIO.output(23, GPIO.HIGH)
 
 
 def tracking_led_off():
-    tlog("LED off")
+    tlog("Tracking LED off")
     GPIO.output(23, GPIO.LOW)
