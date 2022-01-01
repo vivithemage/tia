@@ -9,6 +9,9 @@ from tracking import Tracking
 from state import RunningState, CurrentTaskState, DescriptionState, ButtonIdState
 import time
 
+import glob
+import os
+
 # Ignore warning for now
 gpio.setwarnings(False)
 gpio.setmode(gpio.BOARD)
@@ -97,6 +100,18 @@ class Tia:
     def __init__(self):
         pass
 
+    # Clear out recordings
+    def clear(self):
+        # Initializing the Folder Path
+        recordings_directory = "recordings"
+
+        # Getting List of All the Files in the Folder
+        file_list = glob.glob(recordings_directory + "/*")
+
+        for file in file_list:
+            print("Removing {}".format(file))
+            os.remove(file)
+
     def falling(self, button_id, task_id):
         tlog("pressed - button id: " + str(button_id))
 
@@ -139,6 +154,7 @@ class Tia:
 
         # start monitoring and acting on button state changes
         tlog("Tia is starting up.")
+        self.clear()
         # If execution lasts longer than the button press bounce value, it seems to crash.
         # This is the reason for a seperate thread (InputHandler) being used to monitor and act on button/state changes.
         handler = InputHandler()
