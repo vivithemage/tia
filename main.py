@@ -34,7 +34,7 @@ timecamp_task_id = {
     'admin': 96440755,
 }
 
-bounce_ms = 1000
+bounce_ms = 100
 
 
 class GlobalState:
