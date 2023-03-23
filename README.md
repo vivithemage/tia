@@ -1,14 +1,30 @@
-# Tia 
+# Track in a box
 
-### Overview
+![Alt text](timecamp-desktop-box.jpg "Timecamp hardware")
 
-Timecamp is pretty bad at the best of the time, this tries to make it a bit more
-bearable...
+## Overview
+
+This is a box that allows you to start tracking time by using a few buttons rather than the timecamp web gui. I always struggled with timecamp (either it crashed or I didn't have it open) when I received a phone call or when a meeting was about to start and this helped as when the phone rang I could just tap the 'phone' task and say who was calling and that would end up in timecamp.
+
+In a nutshell it works like this:
+
+* Tap a button to start time tracking
+* Describe what you are doing into the mic
+* Start working on the task and press the stop button when you are finished.
+
+## Set up
+
+The hardware is esentially a raspberry pi with a few buttons and a mic plugged in. If more details are required for hardware, let me know and I'll update this.
+
+For the software side:
+
+* Set your timecamp api key in timecamp.py
+* Set your task id's in main.py
+* Set pins in main.py
 
 ## Run as systemd service
 
-It's better to run it this way as it means that you do not have to start the
-program manually every time the pi is switched on. Before doing this, ensure that
+It's better to run it this way as it means that you do not have to start the program manually every time the pi is switched on. Before doing this, ensure that
 tia can run properly without any errors.
 
 First, make a new tia service by running: 
