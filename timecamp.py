@@ -11,9 +11,7 @@ tc_endpoints = {
 
 # Seperate api keys, makes it easy to switch during testing
 api_key = {
-    'rs':  '90c3737f69122ea9ea321928e6', # My work timecamp
-    'rst': 'cd9eab8a7b4551e664c2e0a9ed', # test timecamp
-    'tm':  '9cea44b6316b521a673556d2a4'  # Tom's timecamp
+    'key':  'Your programming API token', # your key
 }
 
 
@@ -21,7 +19,7 @@ api_key = {
 class TimecampApi:
     def __init__(self):
         self.headers = {
-            'authorization': api_key['rst'],
+            'authorization': api_key['key'],
             'Content-Type': "application/json"
         }
 
